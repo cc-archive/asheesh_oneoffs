@@ -3,6 +3,7 @@ import csv
 import string
 import urllib
 import re
+import os
 
 PAGE_TITLE, FREE_TEXT = range(2)
 
