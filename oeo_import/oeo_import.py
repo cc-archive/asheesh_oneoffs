@@ -1,6 +1,7 @@
 SOURCE_CSV="/tmp/ccLearn Data.csv"
 import csv
 import string
+import urllib
 import re
 
 PAGE_TITLE, FREE_TEXT = range(2)
@@ -21,7 +22,8 @@ def identity(if_empty = None):
         if if_empty is not None:
             if not thing.strip():
                 ret = if_empty
-        return [thing]
+        ret = ' '.join(ret.split())
+        return [ret]
     return _identity
 
 def url_fixup(thing):
@@ -75,16 +77,14 @@ def dict2template(indict):
     free_text = mydict[FREE_TEXT]
     del mydict[FREE_TEXT]
 
-    print 'For page with title', page_title
-
     ret = '{{Organization\n'
     for elt in mydict:
         ret += '|' + elt + '=' + mydict[elt] + "\n"
     ret += "}}\n"
     if free_text:
         ret += '\n' + free_text + '\n'
-        
-    return ret
+
+    return (page_title, ret)
 
 def row2dict(row):
     '''Input: a list of entries in the row
@@ -109,6 +109,18 @@ def main():
     csv_stream = csv.reader(open(SOURCE_CSV))
     for row in csv_stream:
         data = row2dict(row)
-        print dict2template(data)
+        title, contents = dict2template(data)
+        if title == 'Title/ Organization': # header row
+            continue
+        filename = urllib.quote_plus(title) + '.mw'
+        assert not os.path.exists(filename)
+        fd = open(filename, 'w')
+        fd.write(contents)
+        fd.close()
+        
+if __name__ == '__main__':
+    main()
+
+        
 
     
