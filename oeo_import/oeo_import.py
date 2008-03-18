@@ -55,7 +55,7 @@ cols2template = {
     4: ('Affiliation', identity()),
     5: ('Mainurl', identity()),
     6: ('Resource URL', url_fixup),
-    7: ('Tag', lambda s: [t.strip() for t in s.split()]),
+    7: ('Tag', lambda s: [t.strip() for t in s.split(',')]),
     8: ('Organization Type', organization_type_fixup),
     9: ('Status', status_fixup),
     10:(FREE_TEXT, identity()),
@@ -94,7 +94,15 @@ def row2dict(row):
     data = {}
     for index, value in enumerate(row):
         name, function = cols2template[index]
-        data[name] = ','.join(function(value))
+        if name not in data:
+            data[name] = []
+        data[name].extend(function(value))
+
+    # Comma-join everything
+    for name in data:
+        non_empty = [thing for thing in data[name] if thing]
+        data[name] = ','.join(non_empty)
+        assert ',,' not in data[name]
     return data
 
 def main():
