@@ -1,4 +1,5 @@
 SOURCE_CSV="/tmp/ccLearn Data.csv"
+import csv
 
 PAGE_TITLE, FREE_TEXT = range(2)
 
@@ -18,7 +19,7 @@ def identity(if_empty = None):
         if if_empty is not None:
             if not thing.strip():
                 ret = if_empty
-        return thing
+        return [thing]
     return _identity
 
 def url_fixup(thing):
@@ -27,7 +28,8 @@ def url_fixup(thing):
         ret = 'http://' + thing
         print 'Upgraded', ret, 'to a proper HTTP URI'
     assert ret.count('://' == 1)
-    return ret
+    assert ',' not in ret
+    return [ret]
 
 status_fixup = identity('good')
 open_free_fixup = identity('no')
@@ -55,4 +57,22 @@ def row2dict(row):
     Output: a dict with a mapping of MW template parameter name
     to a list (sometimes of length 1) of values for it
     '''
-    pass
+    data = {}
+    for index, value in enumerate(row):
+        name, function = cols2template[index]
+        data[name] = ','.join(function(value))
+    return data
+
+def main():
+    csv_stream = csv.reader(open(SOURCE_CSV))
+    for row in csv_stream:
+        data = row2dict(row)
+        page_title = data[PAGE_TITLE]
+        del data[PAGE_TITLE]
+        free_text = data[FREE_TEXT]
+        del data[FREE_TEXT]
+
+        print page_title, ':', data
+        print ' plus ', free_text
+
+    
