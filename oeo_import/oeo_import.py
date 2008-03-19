@@ -50,6 +50,20 @@ def url_fixup_one(thing):
 status_fixup = identity('good')
 open_free_fixup = identity('no')
 
+def fixup_dict_for_license(mutable_dict):
+    did_anything = False
+    if mutable_dict['License provider'] == 'copyright':
+        did_anything = True
+        mutable_dict['License provider'] = 'none'
+        mutable_dict['License short name'] = 'copyright'
+    if mutable_dict['License short name'] == 'various':
+        if mutable_dict['License provider'] != 'CC':
+            mutable_dict['License short name']=''
+            did_anything = True
+    if did_anything:
+        print 'We fixed', mutable_dict
+    
+
 cols2template = {
     0: (PAGE_TITLE, identity()),
     1: ('Affiliation', identity()),
@@ -104,6 +118,10 @@ def row2dict(row):
         non_empty = [thing for thing in data[name] if thing]
         data[name] = ','.join(non_empty)
         assert ',,' not in data[name]
+
+    # Last-minute emails from Jane about license format
+    fixup_dict_for_license(data)
+
     return data
 
 def main():
@@ -112,6 +130,8 @@ def main():
         data = row2dict(row)
         title, contents = dict2template(data)
         if title == 'Title/ Organization': # header row
+            continue
+        if not title: # When I have nothing to say, my lips are sealed
             continue
         filename = urllib.quote_plus(title) + '.mw'
         assert not os.path.exists(filename)
