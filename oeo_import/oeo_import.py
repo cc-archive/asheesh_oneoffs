@@ -56,8 +56,8 @@ def fixup_dict_for_license(mutable_dict):
         did_anything = True
         mutable_dict['License provider'] = 'none'
         mutable_dict['License short name'] = 'copyright'
-    if mutable_dict['License short name'] == 'various':
-        if mutable_dict['License provider'] != 'CC':
+    if mutable_dict['License provider'] == 'various':
+        if mutable_dict['License short name'] == 'various':
             mutable_dict['License short name']=''
             did_anything = True
     if did_anything:
