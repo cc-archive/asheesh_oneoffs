@@ -1,4 +1,5 @@
 SOURCE_CSV="/tmp/ccLearn Data.csv"
+import codecs
 import csv
 import string
 import urllib
@@ -40,8 +41,10 @@ def url_fixup(thing):
         
 def url_fixup_one(thing):
     ret = thing
-    if not thing.startswith('http://') and not thing.startswith('https://'):
-        ret = 'http://' + thing
+    if ret.startswith('Http://'):
+        ret = 'h' + ret[1:]
+    if not ret.startswith('http://') and not thing.startswith('https://'):
+        ret = 'http://' + ret
         print 'Upgraded', ret, 'to a proper HTTP URI'
     assert ret.count('://') <= 1
     assert ',' not in ret
@@ -70,7 +73,7 @@ cols2template = {
     2: ('Affiliation', identity()),
     3: ('Affiliation', identity()),
     4: ('Affiliation', identity()),
-    5: ('Mainurl', identity()),
+    5: ('Mainurl', url_fixup),
     6: ('Resource URL', url_fixup),
     7: ('Tag', lambda s: [t.strip() for t in s.split(',')]),
     8: ('Organization Type', organization_type_fixup),
@@ -134,10 +137,12 @@ def main():
         if not title: # When I have nothing to say, my lips are sealed
             continue
         filename = urllib.quote_plus(title) + '.mw'
-        assert not os.path.exists(filename)
-        fd = open(filename, 'w')
-        fd.write(contents)
-        fd.close()
+        if os.path.exists(filename):
+            print 'DUP:', title
+        else:
+            fd = codecs.open(filename, 'w', encoding='utf-8')
+            fd.write(contents)
+            fd.close()
         
 if __name__ == '__main__':
     main()
