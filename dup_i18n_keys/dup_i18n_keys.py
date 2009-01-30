@@ -10,18 +10,23 @@ def find_dup_keys(fd):
 
     pofile = babel.messages.pofile.read_po(fd)
     keys = list(pofile._messages.keys())
+
     # If it's a tuple, replace it with it[0]
     for key in keys:
-        if type(key) == type( () ):
-            keys.replace(key, key[0])
+        assert type(key) == unicode
 
-    # Create a bag that shows the counts of the keys' lower-cased values
-    key2count = collections.defaultdict(int)
+    # Create a mapping that groups equivalent (but for case) translations
+    key2xlation = collections.defaultdict(list)
     for key in keys:
-        key2count[key.lower()] += 1
+        key2xlation[key.lower()].append(pofile[key].string)
 
-    for key in key2count:
-        if key2count[key] > 1:
+    for key in key2xlation:
+        if len(key2xlation[key]) > 1:
+            # Assert all the translations are the same
+            for xlation in key2xlation[key]:
+                assert xlation == key2xlation[key][0]
+
+            # Life is good.
             duplicate.add(key)
 
     return duplicate
