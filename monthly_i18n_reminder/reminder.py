@@ -64,6 +64,15 @@ def lang2percent(lang_url):
 
     return ( 100 * float(xlated_words) / total_words )
     
+def long_lang_name(short_lang_name):
+    if '://' not in short_lang_name:
+        url = urlparse.urljoin(BASE, short_lang_name)
+    else:
+        url = short_lang_name
+
+    parsed = parse(url)
+    just_relevant_link = parsed.cssselect('.title a')[0]
+    return ''.join(just_relevant_link.itertext())
 
 def generate_percents():
     ret = {}
@@ -73,8 +82,9 @@ def generate_percents():
         if lang.endswith('templates/'):
             continue # Skip templates
 
-        key, value = lang.split('/')[0], lang2percent(lang)
-        ret[key] = value
+        short_lang, value = lang.split('/')[0], lang2percent(lang)
+        long_lang = long_lang_name(short_lang)
+        ret[long_lang] = value
     return ret
 
 def format_precents(lang2percent):
@@ -91,7 +101,9 @@ TRANSLATION STATUS
 '''.strip()
 
     language_data = []
-    for language, doneness in sorted(lang2percent.items(), key=lambda thing: thing[1], reverse=True):
+    items_alpha_sorted = sorted(lang2percent.items())
+    items_resorted_by_descending_percent_done = sorted(items_alpha_sorted, key=lambda thing: thing[1], reverse=True)
+    for language, doneness in items_resorted_by_descending_percent_done:
         doneness = int(doneness)
         if doneness == 100:
             suffix = ', thank you!'
