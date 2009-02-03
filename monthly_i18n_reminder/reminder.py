@@ -84,7 +84,7 @@ translate.creativecommons.org. We send these out at the end of every month.
 
 (If you need help using Pootle, take a look at our documentation that
 we link to as "Overview of using Pootle from the front page of
-translate.creativecommons.org.
+translate.creativecommons.org.)
 
 TRANSLATION STATUS
 
