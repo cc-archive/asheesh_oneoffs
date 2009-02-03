@@ -1,4 +1,5 @@
 import lxml.html
+import urllib2
 import urlparse
 BASE='http://translate.creativecommons.org/'
 
@@ -12,7 +13,8 @@ def languages(root):
     return langs
 
 def parse(url):
-    return lxml.html.parse(url).getroot()
+    doc = urllib2.urlopen(url).read()
+    return lxml.html.fromstring(doc)
 
 def lang2percent(lang_url):
     '''Input: a language URL
@@ -89,14 +91,14 @@ TRANSLATION STATUS
 '''.strip()
 
     language_data = []
-    for language in sorted(lang2percent):
-        doneness = int(lang2percent[language])
+    for language, doneness in sorted(lang2percent.items(), key=lambda thing: thing[1], reverse=True):
+        doneness = int(doneness)
         if doneness == 100:
             suffix = ', thank you!'
         else:
             suffix = ''
         language_data.append(
-            '%s: %d done%s' % (
+            '%s: %d%% done%s' % (
                 language, doneness, suffix))
 
     message = prefix + '\n\n' + '\n'.join(
