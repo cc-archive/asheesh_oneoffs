@@ -1,4 +1,8 @@
 import lxml.html
+import email
+import email.charset
+import email.mime.text
+import smtplib
 import urllib2
 import urlparse
 BASE='http://translate.creativecommons.org/'
@@ -18,7 +22,6 @@ def send_mail(subject, body, dry_run = False):
     del msg['Content-Transfer-Encoding']
     msg.set_charset(charset) 
     msg.set_param('format', 'flowed')
-
     msg.add_header('Subject', subject)
     SERVER='localhost'
     FROM='"Monthly Translation Update" <asheesh@creativecommons.org>'
@@ -205,7 +208,7 @@ TRANSLATION STATUS
 def main():
     suggestion_data = generate_suggestion_data()
     percents = generate_percents()
-    send_mail('Monthly translation status', format_precents(percents, suggestion_data), dry_run = True)
+    send_mail('Monthly translation status', format_precents(percents, suggestion_data), dry_run = False)
 
 
 if __name__ == '__main__':
