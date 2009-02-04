@@ -3,6 +3,37 @@ import urllib2
 import urlparse
 BASE='http://translate.creativecommons.org/'
 
+def send_mail(subject, body, dry_run = False):
+    # Create a UTF-8 quoted printable encoder
+    charset = email.charset.Charset('utf-8')
+    charset.header_encoding = email.charset.QP
+    charset.body_encoding = email.charset.QP
+
+    # Jam the data into msg, as binary utf-8
+    msg = email.mime.text.MIMEText(body, 'plain')
+
+    # Message class computes the wrong type from MIMEText constructor,
+    # which does not take a Charset object as initializer. Reset the
+    # encoding type to force a new, valid evaluation
+    del msg['Content-Transfer-Encoding']
+    msg.set_charset(charset) 
+    msg.set_param('format', 'flowed')
+
+    msg.add_header('Subject', subject)
+    SERVER='localhost'
+    FROM='"Monthly Translation Update" <asheesh@creativecommons.org>'
+    if dry_run:
+        TO = ['asheesh@creativecommons.org']
+    else:
+        TO = ['cci@lists.ibiblio.org']
+
+    msg.add_header('To', TO[0])
+
+    s = smtplib.SMTP()
+    s.connect(SERVER)
+    s.sendmail(FROM, TO, msg.as_string())
+    s.close()
+
 
 def languages(root):
     langs = set()
@@ -174,7 +205,7 @@ TRANSLATION STATUS
 def main():
     suggestion_data = generate_suggestion_data()
     percents = generate_percents()
-    print format_precents(percents, suggestion_data)
+    send_mail('Monthly translation status', format_precents(percents, suggestion_data), dry_run = True)
 
 
 if __name__ == '__main__':
