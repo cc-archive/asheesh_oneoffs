@@ -63,7 +63,43 @@ def lang2percent(lang_url):
             xlated_words += this_row_word_count - untranslated_count - fuzzy_count
 
     return ( 100 * float(xlated_words) / total_words )
+
+def lang_project_has_suggestions(lang_project_url):
+    assert '://' in lang_project_url
+    assert '?' not in lang_project_url
+    editing_functions_url = lang_project_url + '?editing=1'
     
+    # Grab it, and look for the string 'View Suggestions'
+    return 'View Suggestions' in urllib2.urlopen(editing_functions_url).read()
+
+def lang_has_suggestions_anywhere(lang_url):
+    '''Input: a short language name
+    Output: a boolean: Are there suggestions anywhere in this language?'''
+    if '://' not in lang_url:
+        lang_url = urlparse.urljoin(BASE, lang_url)
+
+    # Parse this
+    parsed = parse(lang_url)
+    
+    # Grab the stats table rows
+    rows = parsed.cssselect('.stats tbody tr')
+
+    for name_col, progress_col, summary_col, total_words_col in rows:
+        # If this is the Pootle or Terminology project, skip this row
+        name_text = ''.join(name_col.itertext())
+        if 'pootle' in name_text.lower():
+            continue
+        if 'terminology' in name_text.lower():
+            continue
+
+        # The name_col will have a link...
+        link = name_col.find('a').get('href')
+        if lang_project_has_suggestions(urlparse.urljoin(lang_url, link)):
+            return True
+        # Otherwise try the next one.
+
+    return False
+
 def long_lang_name(short_lang_name):
     if '://' not in short_lang_name:
         url = urlparse.urljoin(BASE, short_lang_name)
@@ -87,7 +123,20 @@ def generate_percents():
         ret[long_lang] = value
     return ret
 
-def format_precents(lang2percent):
+def generate_suggestion_data():
+    ret = {}
+    parsed = parse(BASE)
+    langs = languages(parsed)
+    for lang in langs:
+        if lang.endswith('templates/'):
+            continue # Skip templates
+
+        short_lang, value = lang.split('/')[0], lang_has_suggestions_anywhere(lang)
+        long_lang = long_lang_name(short_lang)
+        ret[long_lang] = value
+    return ret
+
+def format_precents(lang2percent, lang2suggestions):
     prefix = '''
 This is a summary of what translations need some work at 
 translate.creativecommons.org. We send these out at the end of every month.
@@ -109,6 +158,10 @@ TRANSLATION STATUS
             suffix = ', thank you!'
         else:
             suffix = ''
+
+        if lang2suggestions[language]:
+            suffix = ' (Suggestions available)' + suffix
+
         language_data.append(
             '%s: %d%% done%s' % (
                 language, doneness, suffix))
@@ -119,8 +172,9 @@ TRANSLATION STATUS
     return message
 
 def main():
+    suggestion_data = generate_suggestion_data()
     percents = generate_percents()
-    print format_precents(percents)
+    print format_precents(percents, suggestion_data)
 
 
 if __name__ == '__main__':
