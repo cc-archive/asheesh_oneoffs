@@ -5,7 +5,7 @@ import email.mime.text
 import smtplib
 import urllib2
 import urlparse
-BASE='http://translate.creativecommons.org/'
+BASE='http://translate.creativecommons.org/projects/cc_org/'
 
 def send_mail(subject, body, dry_run = False):
     # Create a UTF-8 quoted printable encoder
@@ -35,14 +35,27 @@ def send_mail(subject, body, dry_run = False):
     s = smtplib.SMTP()
     s.connect(SERVER)
     s.sendmail(FROM, TO, msg.as_string())
+    if dry_run:
+        print msg.as_string()
     s.close()
 
+def url2parts(url):
+    type, domain, path, _, _, _ = urlparse.urlparse(url)
+    if path[0] == '/':
+        path = path[1:]
+    if path[-1] == '/':
+        path = path[:-1]
+
+    assert path.endswith('cc_org'), path
+    first, rest = path.rsplit('/', 1)
+    lang_code = first.split('/')[-1]
+    return dict(lang_path=first, lang_code=lang_code, project=rest)
 
 def languages(root):
     langs = set()
-    for link in root.cssselect('.language a'):
+    for link in root.cssselect('.stats-name a'):
         href = link.get('href')
-        if href.count('/') == 1:
+        if True or (href.count('/') in (1,2)):
             langs.add(href)
     return langs
 
@@ -100,7 +113,7 @@ def lang2percent(lang_url):
 
 def lang_project_has_suggestions(lang_project_url):
     assert '://' in lang_project_url
-    assert '?' not in lang_project_url
+    assert '?' not in lang_project_url, lang_project_url
     editing_functions_url = lang_project_url + '?editing=1'
     
     # Grab it, and look for the string 'View Suggestions'
@@ -120,15 +133,13 @@ def lang_has_suggestions_anywhere(lang_url):
 
     for name_col, progress_col, summary_col, total_words_col in rows:
         # If this is the Pootle or Terminology project, skip this row
-        name_text = ''.join(name_col.itertext())
-        if 'pootle' in name_text.lower():
+        name_text = ''.join(name_col.itertext()).strip()
+        if name_text != 'cc_org':
             continue
-        if 'terminology' in name_text.lower():
-            continue
-
+        assert name_text == 'cc_org', name_text
         # The name_col will have a link...
-        link = name_col.find('a').get('href')
-        if lang_project_has_suggestions(urlparse.urljoin(lang_url, link)):
+        link = name_col.find('a').get('href') # but we don't care
+        if lang_project_has_suggestions(lang_url):
             return True
         # Otherwise try the next one.
 
@@ -136,7 +147,7 @@ def lang_has_suggestions_anywhere(lang_url):
 
 def long_lang_name(short_lang_name):
     if '://' not in short_lang_name:
-        url = urlparse.urljoin(BASE, short_lang_name)
+        url = urlparse.urljoin(BASE, './' + short_lang_name)
     else:
         url = short_lang_name
 
@@ -149,10 +160,11 @@ def generate_percents():
     parsed = parse(BASE)
     langs = languages(parsed)
     for lang in langs:
-        if lang.endswith('templates/'):
+        pieces = url2parts(lang)
+        if pieces['lang_code'] == 'templates':
             continue # Skip templates
-
-        short_lang, value = lang.split('/')[0], lang2percent(lang)
+    
+        short_lang, value = pieces['lang_code'], lang2percent(pieces['lang_path'])
         long_lang = long_lang_name(short_lang)
         ret[long_lang] = value
     return ret
@@ -165,7 +177,10 @@ def generate_suggestion_data():
         if lang.endswith('templates/'):
             continue # Skip templates
 
-        short_lang, value = lang.split('/')[0], lang_has_suggestions_anywhere(lang)
+        pieces = url2parts(lang)
+        if pieces['lang_code'] == 'templates':
+            continue # Skip templates
+        short_lang, value = pieces['lang_code'], lang_has_suggestions_anywhere(pieces['lang_path'])
         long_lang = long_lang_name(short_lang)
         ret[long_lang] = value
     return ret
@@ -208,7 +223,7 @@ TRANSLATION STATUS
 def main():
     suggestion_data = generate_suggestion_data()
     percents = generate_percents()
-    send_mail('Monthly translation status', format_precents(percents, suggestion_data), dry_run = False)
+    send_mail('Monthly translation status', format_precents(percents, suggestion_data), dry_run = True)
 
 
 if __name__ == '__main__':
