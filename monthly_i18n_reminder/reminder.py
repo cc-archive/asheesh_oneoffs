@@ -24,9 +24,9 @@ def send_mail(subject, body, dry_run = False):
     msg.set_param('format', 'flowed')
     msg.add_header('Subject', subject)
     SERVER='localhost'
-    FROM='"Monthly Translation Update" <asheesh@creativecommons.org>'
+    FROM='"Monthly Translation Update" <webmaster@creativecommons.org>'
     if dry_run:
-        TO = ['asheesh@creativecommons.org']
+        TO = ['webmaster@creativecommons.org']
     else:
         TO = ['cci@lists.ibiblio.org']
 
